@@ -1,0 +1,185 @@
+\documentclass[twoside,11pt]{article}
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage{graphicx,color}
+\usepackage{verbatim,url}
+\usepackage{listings}
+\usepackage{upquote}
+\usepackage[T1]{fontenc}
+\usepackage[scaled]{beramono}
+\usepackage{float}
+\usepackage{parskip}
+\usepackage{cite}
+
+% Directories for other source files and images
+\newcommand{\bibtexdir}{../bib}
+\newcommand{\figdir}{eps}
+
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\matlab}{{\sc Matlab}\ }
+
+\setlength{\textheight}{9in} \setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{-.25in}  % Centers text.
+\setlength{\evensidemargin}{-.25in} %
+\setlength{\topmargin}{0in} %
+\setlength{\headheight}{0in} %
+\setlength{\headsep}{0in} %
+
+\renewcommand{\labelenumi}{(\alph{enumi})}
+\renewcommand{\labelenumii}{(\arabic{enumii})}
+
+\theoremstyle{definition}
+\newtheorem{MatEx}{M{\scriptsize{ATLAB}} Usage Example}
+\DeclareMathOperator*{\px}{\pmb{x}} 
+\DeclareMathOperator*{\pu}{\pmb{u}} 
+\DeclareMathOperator*{\rtr}{\mathrm{tr}} 
+
+\definecolor{comments}{rgb}{0,.5,0}
+\definecolor{backgnd}{rgb}{.95,.95,.95}
+\definecolor{string}{rgb}{.2,.2,.2}
+\lstset{language=Matlab}
+\lstset{basicstyle=\small\ttfamily,
+        mathescape=true,
+        emptylines=1, showlines=true,
+        backgroundcolor=\color{backgnd},
+        commentstyle=\color{comments}\ttfamily, %\rmfamily,
+        morecomment=[l]{\%},
+        morecomment=[is]{\%\#}{\%\#},
+        stringstyle=\color{string}\ttfamily,
+        keywordstyle=\ttfamily, %\normalfont,
+        showstringspaces=false}
+\newcommand{\matp}{\mathbf{\gg}}
+
+\newcommand{\myraise}{\vspace{-.15cm}}
+
+\begin{document}
+\pagestyle{headings}
+
+\begin{center}
+{\Large {\bf Derivation of Using Scalar Sigma in EM to update GMM}}  \\
+\end{center}
+\vspace{1cm}
+
+\begin{enumerate} 
+\item  \textbf {Derivation for Batch EM} \\
+Assume the GMM composed of K Gaussian components, the pdf of the GMM$(\theta = (\pi_k,\mu_k,\Sigma_k)$) is:\\
+\begin{equation}
+p(x)=\sum_{k=1}^K\pi_kp(x|\mu_k,\Sigma_k)
+\end{equation}
+So the Likelihood Function of the GMM(N = the size of the dataset) should be:\\
+\begin{equation}
+\prod_{i=1}^Np(x_i)=\prod_{i=1}^N\{\sum_{k=1}^K\pi_kp(x_i|\mu_k,\Sigma_k)\}
+\end{equation}
+Because the possibility of each point is usually a very small number, and the production of many small numbers will cause the underflow issue with floating point numbers, we will \textbf{take its log} to transform the production function to a summation function and get the \textbf {log-likelihood function} as following:\par
+\begin{equation}
+\sum_{i=1}^N\log{\{\sum_{k=1}^K\pi_kp(x_i|\mu_k,\Sigma_k)\}}
+\end{equation}
+\textbf{Because the equation(1) p(x) will be expanded as following:}\\
+\begin{equation}
+p(x) = \sum_{k=1}^K\frac{\pi_k}{\sqrt{(2\pi)^d}|\Sigma_k|}e^{-\frac{1}{2}(x-\mu_k)^\top\Sigma_k^{-1}(x-\mu_k)}
+\end{equation}
+\textbf{And the $\Sigma_k $ is changed to be a scalar parameter:}  
+\begin{align*}
+\Sigma_k &= \sigma_k^2\\
+&\Rightarrow |\Sigma_k|=(\sigma^2)^d \\
+&\Rightarrow \Sigma_k^{-1}=\frac{1}{\sigma_k^2}\\
+\end{align*}
+Then the function becomes:\\
+\begin{equation}
+p(x) = \sum_{k=1}^m\frac{\pi_k}{\sqrt{(2\pi\sigma_k^2)^d}}e^{-\frac{1}{2}\frac{(x-\mu_k)^\top(x-\mu_k)}{\sigma_k^2}}
+\end{equation}
+\textbf{So the parameters in Gauss $\theta$ becomes}: $\theta = (\pi_k,\mu_k,\sigma_k^2)$  and we can use $h_k = \sigma_k^2$\\
+makes $\theta = (\pi_k,\mu_k,h_k)$\par
+Because I need to maximize the equation(3), however, the $\log\Sigma$ is a challenge when doing the maximization. The normal way to do that is to use \textbf{Jensen Inequality} as following: \\
+So the log-likelihood function becomes (z is the latent variable):\\
+$\sum_{i=1}^N\log{\sum_{k=1}^Kp(x_i)} = \sum_{i=1}^N\log\{\frac{\sum_{k=1}^Kp(x_i,z_i=k|\theta)}{p(z_i=k|\theta_t)}p(z_i=k|\theta_t)$\\
+\begin{equation}
+\ge \sum_{i=1}^N\sum_{k=1}^Kp(z_i=k|\theta_t)\log\{\frac{p(x_i,z_i=k|\theta)}{p(z_i=k|\theta_t)}\} 
+\end{equation}
+
+\textbf{Represent $\gamma_{ik}=p(z_i=k|\theta_t)$} ($\gamma_{ik} $ is the possibility that data $x_i$ belonged to the kth Gauss; $\theta_t $ is the updated parameter after the current E-step)\\
+\textbf{Now I just need to maximize the equation (6) expanded as the following $L(\theta)$} \\
+\begin{equation}
+L(\theta)=\sum_{i=1}^N\sum_{k=1}^K\gamma_{jk}\left[\log{\pi_k}-\frac{d}{2}\log{2\pi h_k}-\frac{1}{2}\frac{(x_i-\mu_k)^\top(x_i-\mu_k)}{h_k}\right]
+\end{equation}
+And because we have a \textbf{constraint} that $\sum_{k=1}^K\pi_k = 1$, I use \textbf{Lagrange multiplier} to add this constraint in the maximization process as following $T(\theta)$.\\
+\begin{equation}
+T(\theta)= L(\theta)+\lambda(\sum_{k=1}^K\pi_k-1)
+\end{equation}
+\textbf{Maximization:}Get the derivation and set it to equal to zero.Then the parameters $\theta$ become:\\
+$\frac{\partial T}{\partial \pi_k}=\sum_{i=1}^N\frac{\gamma_{ik}}{\pi_k}+\lambda = 0$\\
+\begin{equation}
+\Rightarrow \pi_k = \frac{\sum_{i=1}^N\gamma_{ik}}{\sum_{i=1}^N\sum_{k=1}^K\gamma_{ik}}
+\end{equation}
+$\frac{\partial T}{\partial\mu_k}=\sum_{i=1}^N\gamma_{ik}\frac{x_i-\mu_k}{h_k}=0$\\
+\begin{equation}
+\Rightarrow \mu_k = \frac{\sum_{i=1}^N\gamma_{ik}x_i}{\sum_{i=1}^N\gamma_{ik}}
+\end{equation}
+$\frac{\partial \pi}{\partial h_k}=-\sum_{i=1}^N\gamma_{ik}\frac{d}{2}\frac{1}{h_k}+\frac{1}{2}\sum_{i=1}^N\gamma_{ik}\frac{{(x_i-\mu_k)}^\top(x_i-\mu_k)}{h_k^2}=0$\\
+\begin{equation}
+\Rightarrow h_k= \frac{\sum_{i=1}^N\gamma_{ik}{(x_i-\mu_k)}^\top(x_i-\mu_k)}{d\sum_{i=1}^N\gamma_{ik}}
+\end{equation}
+
+
+\textbf {Finally, deviation result with }$\Sigma_k=h_kI$ is as following:\par
+The two Steps in EM become:\par
+\textbf {E-Step}:\\ 
+$\gamma_ik=p(z^j=k|\theta^t)$\par
+
+\textbf {M-Step}:\\
+$\pi_k = \frac{\sum_{i=1}^N\gamma_{ik}}{\sum_{i=1}^N\sum_{k=1}^K\gamma_{ik}}$\par
+$\mu_k = \frac{\sum_{i=1}^N\gamma_{ik}x_i}{\sum_{i=1}^N\gamma_{ik}}$\par
+$h_k= \frac{\sum_{i=1}^N\gamma_{ik}{(x_i-\mu_k)}^\top(x_i-\mu_k)}{d\sum_{i=1}^N\gamma_{ik}}$\par
+In this case, dimension d = 2 \par
+
+
+
+\vspace{2cm}
+\item \textbf {Derivation for Online EM$^{[1]}$}\\
+
+ \textbf {Given the Gauvain's update formula for the matrix $\Sigma_j$ of j-th Gaussian in the mixture reads:}\par
+
+\begin{equation}
+\Sigma_j^{''} = \frac{b_jI+\Sigma_{q=0}^{N-1}\gamma_{qj}(s_q-\mu_j){(s_q-\mu_j)}^\top}{(a_j-2)+\Sigma_{q=0}^{N-1}\gamma_{qj}} 
+\end{equation}
+Because in the equation(12), scalars a,b and v are parameters of conjugate priors induced by the MAP solution$^{[2]}$. I is the identity matrix. a > d-1, b > 0 are hyper-parameters, and d = 2 is the dimension. Bishop[2006] provides details on the use of Dirichlet and Wishart distributions as conjugate priors.\par
+So we use the same conjugate as the on-line paper$^{[2]}$ and by using the derivation result of $h_k$ as above, we can get the$ \Sigma_j $as following:\\
+\begin{equation}
+\Sigma_j^{'}  = \frac{b_jI+\Sigma_{q=0}^{N-1}\gamma_{qj}{(s_q-\mu_j)}^\top(s_q-\mu_j)}{(a_j-2)+d\Sigma_{q=0}^{N-1}\gamma_{qj}}
+\end{equation}
+ By using simple algebra, we get:
+ \begin{equation}
+ {(s_q-\mu_j)}^\top(s_q-\mu_j) = s_q^\top s_q - s_q^\top\mu_j-\mu_j^\top s_q+\mu_j\mu_j^\top
+ \end{equation}
+Substituting (14) into (13) and multiplying both the nominator and denominator by $\frac{1}{N}$, the formula for $\Sigma_j$ becomes:\\
+\begin{align}
+\Sigma_j^{'}  & = \Sigma_j^{'}  \frac{\frac{1}{N}}{\frac{1}{N}} \\
+ & =\frac{\frac{b_j}{N}+\frac{1}{N}\Sigma_{q=0}^{N-1}\gamma_{qj}s_q^\top s_q-A+B}{\frac{(a_j-2)}{N}+\Sigma_{q=0}^{N-1}\frac{\gamma_{qj}}{N}} \\
+ \text{where,~~~~~~~~}  A  &= \frac{1}{N}\Sigma_{q=0}^{N-1}\gamma_{qj}s_q^\top\mu_j+\frac{1}{N}\Sigma_{q=0}^{N-1}\gamma_{qj}\mu_j^\top s_q  \\
+B & = \frac{1}{N}\Sigma_{q=0}^{N-1}\gamma_{qj}\mu_j^\top\mu_j  
+\end{align}
+
+
+Then the fact to obtain MAP update formula$^{[1]}$ of the covariance matrix(the sufficient statistics: a triplet $u_i^j=((u_\gamma)_i^j,(s)_i^j,(ss^\top)_i^j)$)is:\\
+\begin{align}
+\Sigma_j^{'} & = \frac{\frac{b_jI}{N}+{(s^\top s)}_i^j-A+{(u_\gamma)}_i^jB}{\frac{(a_j-2)}{N}+d(u_\gamma)_i^j}\\
+ \text{where,~~~~~~~~} A &={(s^\top)}_i^j\mu_j+\mu_j^\top s_i^j \\
+B &=\mu_j^\top\mu_j \\
+\end{align}
+ 
+This is a article ralted to Bibtex\cite{viola2001rapid}\\
+The second citition\cite{murphy2012machine}
+
+
+\end{enumerate}
+\vspace{3cm}
+{\Large\bf{Refrence} }\par
+[1] Vorba, Jiri, et al. "On-line Learning of Parametric Mixture Models for Light Transport Simulation?Supplemental material." \par
+[2] Vorba, Ji?í, et al. "On-line learning of parametric mixture models for light transport simulation." ACM Transactions on Graphics (TOG) 33.4 (2014): 101.\par
+[3] Bishop, Christopher M. "Pattern Recognition." Machine Learning (2006).\par
+
+\bibliographystyle{unsrt} %
+\bibliography{bibfile}
+
+\end{document}

@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: DerivationOfScalarSigma.aux
+The style file: plain.bst
+Database file #1: bibfile.bib
+You've used 1 entry,
+            2118 wiz_defined-function locations,
+            504 strings with 4266 characters,
+and the built_in function-call counts, 438 in all, are:
+= -- 45
+> -- 13
+< -- 2
++ -- 5
+- -- 4
+* -- 28
+:= -- 70
+add.period$ -- 4
+call.type$ -- 1
+change.case$ -- 5
+chr.to.int$ -- 0
+cite$ -- 1
+duplicate$ -- 19
+empty$ -- 38
+format.name$ -- 4
+if$ -- 98
+int.to.chr$ -- 0
+int.to.str$ -- 1
+missing$ -- 1
+newline$ -- 8
+num.names$ -- 2
+pop$ -- 7
+preamble$ -- 1
+purify$ -- 4
+quote$ -- 0
+skip$ -- 14
+stack$ -- 0
+substring$ -- 27
+swap$ -- 8
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 4
+warning$ -- 0
+while$ -- 5
+width$ -- 2
+write$ -- 15
